@@ -1,6 +1,7 @@
 # retriever.py
 
 
+from chromadb.config import Settings
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from config import VECTOR_DB_DIR, EMBEDDING_MODEL, TOP_K, OPENAI_API_KEY, BASE_URL
@@ -17,7 +18,7 @@ def get_retriever():
         persist_directory=VECTOR_DB_DIR,
         collection_metadata = {'hnsw:space': 'cosine'},
         collection_name = 'powerBI_collection',
-       
+        client_settings = Settings(anonymized_telemetry=False),
     )
 
     retriever = vectordb.as_retriever(

@@ -1,5 +1,6 @@
 # embeddings.py
 
+from chromadb.config import Settings
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from ingest import doc_splitter
@@ -19,7 +20,8 @@ def create_vector_db():
         embedding=embeddings,
         persist_directory=VECTOR_DB_DIR,
         collection_metadata = {'hnsw:space': 'cosine'},
-        collection_name = 'powerBI_collection'
+        collection_name = 'powerBI_collection',
+        client_settings = Settings(anonymized_telemetry=False)
     )
 
     #vector_store.persist()

@@ -1,63 +1,95 @@
 # rag_chat.py
 
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
-from retriever import get_retriever
-from prompts import SYSTEM_PROMPT, USER_PROMPT_TEMPLATE
-from config import CHAT_MODEL, OPENAI_API_KEY, BASE_URL
 from openai import OpenAI
 
+from config import CHAT_MODEL, OPENAI_API_KEY, BASE_URL
+from prompts import (
+    SYSTEM_PROMPT,
+    USER_PROMPT_TEMPLATE,
+    format_context,
+    format_history,
+)
+from retriever import get_retriever
 
-#create an empty list to store chat history 
-chat_history = []
 
-retriever = get_retriever()
-def main():
-    """ This funcion takes the user query, adds the previous answer to the chat history,
-        and closes the chatbot 
+def build_client():
+    """OpenAI client. BASE_URL is optional; empty means 'use the default endpoint'."""
+    return OpenAI(api_key=OPENAI_API_KEY, base_url=BASE_URL or None)
+
+
+def answer(question, retriever, client, history=None):
+    """Answer one question from the documentation.
+
+    Returns (answer_text, source_documents) so callers can show citations.
     """
-    print("Hello! I am you power BI assistant.")
-    while True:
-        print("How may I assist? (click q to exit the chat)")
-        question = str(input("USER: ")).strip()
-
-        if question.lower()== 'q':
-            print('See you later!')
-            break
-        else:
-            chat_bot(question)
-
-def chat_bot(question):
-
-    client = OpenAI(
-        api_key = OPENAI_API_KEY,
-        base_url = BASE_URL
-    )
-
-    relevant_chunks = retriever.invoke(question)
-    context_list = [d.page_content for d in relevant_chunks]
-    context_for_query = chr(10).join(context_list)
+    documents = retriever.invoke(question)
 
     prompt = [
-        {'role': 'developer', 'content': SYSTEM_PROMPT},
-        {'role': 'user', 'content': USER_PROMPT_TEMPLATE.format(
-            context = context_for_query,
-            question = question,
-            chat_history = chat_history
-        )
-        }
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": USER_PROMPT_TEMPLATE.format(
+                context=format_context(documents),
+                question=question,
+                chat_history=format_history(history or []),
+            ),
+        },
     ]
+
     try:
         response = client.chat.completions.create(
-            model = CHAT_MODEL,
-            messages = prompt,
-            temperature = 0
+            model=CHAT_MODEL,
+            messages=prompt,
+            temperature=0,
         )
-
-        prediction = response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip(), documents
     except Exception as e:
-        prediction = f'Sorry, I encountered the following error: \n {e}'
-    chat_history.append(prediction)
-    return print(f"POWER BI ASSISTANT: {prediction}")
+        return f"Sorry, I encountered the following error:\n{e}", []
 
-main()
+
+def cite(documents):
+    """One-line list of the pages an answer was grounded in."""
+    pages = []
+    for doc in documents:
+        meta = doc.metadata or {}
+        page = meta.get("page_label") or meta.get("page")
+        if page is not None and page not in pages:
+            pages.append(page)
+    return ", ".join(f"p.{p}" for p in pages)
+
+
+def main():
+    """Interactive CLI: ask questions until the user types 'q'."""
+    retriever = get_retriever()
+    client = build_client()
+    history = []
+
+    print("Hello! I am your Power BI assistant.")
+    print("Ask a question, or type 'q' to exit.\n")
+
+    while True:
+        try:
+            question = input("USER: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nSee you later!")
+            break
+
+        if not question:
+            continue
+        if question.lower() == "q":
+            print("See you later!")
+            break
+
+        text, documents = answer(question, retriever, client, history)
+        print(f"\nPOWER BI ASSISTANT: {text}")
+
+        sources = cite(documents)
+        if sources:
+            print(f"Sources: {sources}")
+        print()
+
+        history.append((question, text))
+
+
+if __name__ == "__main__":
+    main()
