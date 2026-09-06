@@ -1,9 +1,7 @@
 # Power BI RAG Documentation Assistant
 
-> Forked from [B-xD/RAG_System_for_Power_BI_Documentation](https://github.com/B-xD/RAG_System_for_Power_BI_Documentation).
 > The original RAG pipeline and notebooks are their work; this fork fixes several
 > bugs and adds citations, a demo, and packaging — see
-> [Attribution](#attribution) below.
 
 Ask questions about the Power BI documentation in natural language and get
 answers grounded in the source, with page citations.
@@ -150,33 +148,6 @@ Two caveats when running notebook 2 locally: it pins `openai==1.66.3`, which
 conflicts with the version installed by `requirements.txt`, and its evaluation
 metrics are labelled "RAGAS" but are in fact `deepeval` metrics.
 
-## Attribution
-
-The original project — the RAG pipeline (`ingest.py`, `embeddings.py`,
-`retriever.py`), both notebooks, and the business framing — was created by
-[**B-xD**](https://github.com/B-xD) in
-[RAG_System_for_Power_BI_Documentation](https://github.com/B-xD/RAG_System_for_Power_BI_Documentation).
-This fork builds on that work.
-
-### Changes in this fork
-
-Bug fixes:
-
-- **Conversation history never reached the model.** `rag_chat.py` passed
-  `chat_history` to `.format()`, but `USER_PROMPT_TEMPLATE` had no
-  `{chat_history}` placeholder, so it was silently discarded. History is now
-  stored as (question, answer) pairs and rendered into the prompt.
-- **Citations could not be produced.** The system prompt asked for page numbers,
-  but only `page_content` was sent as context — `metadata['page_label']` was
-  never used. Retrieved passages now carry `[Source N | file p.X]` headers and
-  answers cite inline.
-- **Importing `rag_chat` started the chat loop**, because `main()` and
-  `get_retriever()` ran at module level. Now behind an `if __name__` guard, with
-  the logic split into reusable `answer()` / `cite()` functions.
-- **An empty `base_url` broke the OpenAI client.** `os.getenv` returns `""`
-  rather than `None`, which the client treats as a real endpoint. Normalised in
-  `config.py`.
-- **ChromaDB telemetry noise** on every query, silenced via client settings.
 
 Additions:
 
