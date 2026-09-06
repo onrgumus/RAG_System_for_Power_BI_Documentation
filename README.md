@@ -131,6 +131,25 @@ All settings live in `src/config.py`:
 endpoint. Leave `base_url` commented out to use the default OpenAI endpoint —
 setting it to an empty string will break the client.
 
+## Notebooks
+
+The notebooks were written for Google Colab and read the API key with
+`google.colab.userdata`, so they need small edits to run locally. They also
+require an extra dependency:
+
+```bash
+./venv/bin/python -m pip install -r requirements.txt -r requirements-notebooks.txt
+```
+
+| Notebook | Contents |
+|---|---|
+| `1 - Building a _(RAG)_System_...` | The pipeline as an exploratory walkthrough — loading, chunking, embedding, retrieval, generation |
+| `2- Evaluating_(RAG)_System_...` | ChromaDB CRUD, prompt construction, and evaluation with faithfulness, contextual precision, and contextual recall metrics |
+
+Two caveats when running notebook 2 locally: it pins `openai==1.66.3`, which
+conflicts with the version installed by `requirements.txt`, and its evaluation
+metrics are labelled "RAGAS" but are in fact `deepeval` metrics.
+
 ## Attribution
 
 The original project — the RAG pipeline (`ingest.py`, `embeddings.py`,

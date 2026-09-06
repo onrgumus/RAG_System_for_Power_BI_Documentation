@@ -1,0 +1,9 @@
+# Extra dependencies for notebooks/ only.
+# The notebooks also need everything in requirements.txt:
+#     pip install -r requirements.txt -r requirements-notebooks.txt
+
+# Evaluation metrics used in notebook 2 (FaithfulnessMetric,
+# ContextualPrecisionMetric, ContextualRecallMetric, LLMTestCase).
+# Note: the notebook labels these "RAGAS" metrics, but they come from
+# deepeval — the ragas package itself is never imported.
+deepeval
