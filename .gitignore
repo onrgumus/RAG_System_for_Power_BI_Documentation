@@ -5,3 +5,4 @@ vector_db/
 .ipynb_checkpoints/
 .chroma/
 venv/
+.DS_Store
